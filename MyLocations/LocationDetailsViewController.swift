@@ -53,11 +53,37 @@ class LocationDetailsViewController: UITableViewController {
         }
         dateLabel.text = dateToString(from: Date())
         
+        // funcel: Hide keyboard
+        let gestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(hideKeyboard))
+        gestureRecognizer.cancelsTouchesInView = false
+        tableView.addGestureRecognizer(gestureRecognizer)
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         navigationController?.isNavigationBarHidden = false
+    }
+    
+    // MARK: - Table view delegates
+    override func tableView(_ tableView: UITableView, willSelectRowAt indexPath: IndexPath) -> IndexPath? {
+        //print("TAG tableView(_:willSelectRowAt:)...")
+        
+        // because user can only operate section 0 and section 1
+        if indexPath.section == 0 || indexPath.section == 1 {
+            return indexPath
+        }else {
+            // will not have event to trigger tableView(_:didSelectRowAt:)
+            // it means app will not respond to tap in section 2
+            return nil
+        }
+    }
+    
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        //print("TAG tableView(_:didSelectRowAt:)...")
+        
+        if indexPath.section == 0 && indexPath.row == 0 {
+            self.descriptionText.becomeFirstResponder()
+        }
     }
     
     // Acctually, it's a static cell TableViewController, don't need data source
@@ -126,7 +152,17 @@ class LocationDetailsViewController: UITableViewController {
     }
     
     @IBAction func done() {
-        navigationController?.popViewController(animated: true)
+        guard let mainView = navigationController?.parent?.view
+        else {return}
+        
+        // we don't use the current view as parent view,
+        // because we want current view's parent view (Tab Bar View) cannot interact with user when Hud view was showing
+//        let hudview = HudView.hud(inView: view, animation: true)
+        
+        let hudview = HudView.hud(inView: mainView, animation: true)
+        hudview.text = "Tagged"
+        
+//        navigationController?.popViewController(animated: true)
     }
     
     // action func for unwind segue
@@ -167,5 +203,18 @@ class LocationDetailsViewController: UITableViewController {
     
     func dateToString(from date: Date) -> String {
         return dateFormatter.string(from: date)
+    }
+    
+    // hide key board
+    @objc func hideKeyboard(_ gestureRecognizer: UITapGestureRecognizer) {
+        let point = gestureRecognizer.location(in: tableView)
+        let indexPath = tableView.indexPathForRow(at: point)
+        
+        if indexPath != nil && indexPath!.section == 0 && indexPath!.row == 0 {
+            return
+        }
+        
+        // cancel text view as the first responder
+        descriptionText.resignFirstResponder()
     }
 }
