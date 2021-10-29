@@ -162,7 +162,21 @@ class LocationDetailsViewController: UITableViewController {
         let hudview = HudView.hud(inView: mainView, animation: true)
         hudview.text = "Tagged"
         
-//        navigationController?.popViewController(animated: true)
+        //hudview.show(animation: true)
+        hudview.showSpringAnimation(animation: true)
+        
+        // navigate to parent screen after a delay time
+        // encapsulate into Functions.swift
+        afterDelay(0.6) {
+            hudview.hide()
+            self.navigationController?.popViewController(animated: true)
+        }
+        
+//        let delayInSeconds = 0.6    // this delay time should correspond with animation's run time
+//        DispatchQueue.main.asyncAfter(deadline: .now() + delayInSeconds) {
+//            hudview.hide()
+//            self.navigationController?.popViewController(animated: true)
+//        }
     }
     
     // action func for unwind segue
