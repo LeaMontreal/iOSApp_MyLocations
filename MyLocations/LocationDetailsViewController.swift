@@ -23,7 +23,7 @@ private let dateFormatter: DateFormatter = {
 
 class LocationDetailsViewController: UITableViewController {
 
-    @IBOutlet var descriptionText: UITextView!
+    @IBOutlet var descriptionTextView: UITextView!
     @IBOutlet var categoryLabel: UILabel!
     @IBOutlet var latitudeLabel: UILabel!
     @IBOutlet var longitudeLabel: UILabel!
@@ -38,6 +38,19 @@ class LocationDetailsViewController: UITableViewController {
     
     var managedObjectContext: NSManagedObjectContext!
     
+    var descriptionText = ""
+    var locationToEdit: Location? {
+        didSet {
+            if let location = locationToEdit {
+                self.descriptionText = location.locationDescription
+                self.categoryName = location.category
+                self.coordinate = CLLocationCoordinate2D(latitude: location.latitude, longitude: location.longitude)
+                self.placemark = location.placemark
+                self.date = location.date
+            }
+        }
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -46,21 +59,31 @@ class LocationDetailsViewController: UITableViewController {
 
         // Uncomment the following line to display an Edit button in the navigation bar for this view controller.
         // self.navigationItem.rightBarButtonItem = self.editButtonItem
-        descriptionText.text = ""
-        categoryLabel.text = ""
-        latitudeLabel.text = String(format: "%.8f", coordinate.latitude)
-        longitudeLabel.text = String(format: "%.8f", coordinate.longitude)
-        if let placemark = placemark {
-            addressLabel.text = toString(from: placemark)
-        }else {
-            addressLabel.text = "No Address found"
-        }
-        dateLabel.text = dateToString(from: date)
         
-        // funcel: Hide keyboard
-        let gestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(hideKeyboard))
-        gestureRecognizer.cancelsTouchesInView = false
-        tableView.addGestureRecognizer(gestureRecognizer)
+        if let location = locationToEdit {
+            title = "Edit Location"
+            descriptionTextView.text = descriptionText
+            categoryLabel.text = categoryName
+        }
+        else {
+            descriptionTextView.text = ""
+            categoryLabel.text = ""
+        }
+
+            latitudeLabel.text = String(format: "%.8f", coordinate.latitude)
+            longitudeLabel.text = String(format: "%.8f", coordinate.longitude)
+            if let placemark = placemark {
+                addressLabel.text = toString(from: placemark)
+            }else {
+                addressLabel.text = "No Address found"
+            }
+            dateLabel.text = dateToString(from: date)
+            
+            // funcel: Hide keyboard
+            let gestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(hideKeyboard))
+            gestureRecognizer.cancelsTouchesInView = false
+            tableView.addGestureRecognizer(gestureRecognizer)
+
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -86,7 +109,7 @@ class LocationDetailsViewController: UITableViewController {
         //print("TAG tableView(_:didSelectRowAt:)...")
         
         if indexPath.section == 0 && indexPath.row == 0 {
-            self.descriptionText.becomeFirstResponder()
+            self.descriptionTextView.becomeFirstResponder()
         }
     }
     
@@ -164,16 +187,25 @@ class LocationDetailsViewController: UITableViewController {
 //        let hudview = HudView.hud(inView: view, animation: true)
         
         let hudview = HudView.hud(inView: mainView, animation: true)
-        hudview.text = "Tagged"
+        
+        let location: Location
+        if let tmp = locationToEdit {
+            hudview.text = "Updated"
+            // funcel: save data to core data store
+            // 1.1. when edit location, already have a Location object
+            location = tmp
+        }else {
+            hudview.text = "Tagged"
+
+            // 1.2. when tag location, create a managed object and put it into managedObjectContext
+            location = Location(context: managedObjectContext)
+        }
         
         //hudview.show(animation: true)
         hudview.showSpringAnimation(animation: true)
         
-        // save data to core data store
-        // 1. create a managed object and put it into managedObjectContext
-        let location = Location(context: managedObjectContext)
         // 2. put data to be saved into the managed object(location)
-        location.locationDescription = self.descriptionText.text
+        location.locationDescription = self.descriptionTextView.text
 
         location.latitude = self.coordinate.latitude
         location.longitude = self.coordinate.longitude
@@ -258,6 +290,6 @@ class LocationDetailsViewController: UITableViewController {
         }
         
         // cancel text view as the first responder
-        descriptionText.resignFirstResponder()
+        descriptionTextView.resignFirstResponder()
     }
 }

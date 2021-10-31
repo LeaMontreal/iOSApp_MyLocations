@@ -9,7 +9,7 @@ import UIKit
 
 class CategoryPickerViewController: UITableViewController {
 
-    let categories = ["No Category", "School", "Gerosory Store", "Department Store", "Residential Address", "Recreation"]
+    let categories = ["No Category", "School", "Grocery Store", "Department Store", "Residential Address", "Recreation"]
     var selectedCategoryName = ""
     var selectedIndexPath = IndexPath()
     
