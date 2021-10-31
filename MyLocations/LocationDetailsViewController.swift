@@ -7,6 +7,7 @@
 
 import UIKit
 import CoreLocation
+import CoreData
 
 private let dateFormatter: DateFormatter = {
     let formatter = DateFormatter()
@@ -33,6 +34,9 @@ class LocationDetailsViewController: UITableViewController {
     var placemark: CLPlacemark?
     
     var categoryName = "No Category"
+    var date = Date()
+    
+    var managedObjectContext: NSManagedObjectContext!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -51,7 +55,7 @@ class LocationDetailsViewController: UITableViewController {
         }else {
             addressLabel.text = "No Address found"
         }
-        dateLabel.text = dateToString(from: Date())
+        dateLabel.text = dateToString(from: date)
         
         // funcel: Hide keyboard
         let gestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(hideKeyboard))
@@ -165,18 +169,43 @@ class LocationDetailsViewController: UITableViewController {
         //hudview.show(animation: true)
         hudview.showSpringAnimation(animation: true)
         
-        // navigate to parent screen after a delay time
-        // encapsulate into Functions.swift
-        afterDelay(0.6) {
-            hudview.hide()
-            self.navigationController?.popViewController(animated: true)
+        // save data to core data store
+        // 1. create a managed object and put it into managedObjectContext
+        let location = Location(context: managedObjectContext)
+        // 2. put data to be saved into the managed object(location)
+        location.locationDescription = self.descriptionText.text
+
+        location.latitude = self.coordinate.latitude
+        location.longitude = self.coordinate.longitude
+        location.category = self.categoryName
+        location.placemark = self.placemark
+        location.date = self.date
+        // 3. save
+        do{
+            try managedObjectContext.save()
+
+            // navigate to parent screen after a delay time
+            // encapsulate into Functions.swift
+            afterDelay(0.6) {
+                hudview.hide()
+                self.navigationController?.popViewController(animated: true)
+                
+            }
+            
+            //        let delayInSeconds = 0.6    // this delay time should correspond with animation's run time
+            //        DispatchQueue.main.asyncAfter(deadline: .now() + delayInSeconds) {
+            //            hudview.hide()
+            //            self.navigationController?.popViewController(animated: true)
+            //        }
+
+        }catch {
+            // 4. handle error
+//            fatalError("Error: \(error)")
+            // send out alert notification instead of use fatalError() directly
+            fatalCoreDataError(error)
         }
         
-//        let delayInSeconds = 0.6    // this delay time should correspond with animation's run time
-//        DispatchQueue.main.asyncAfter(deadline: .now() + delayInSeconds) {
-//            hudview.hide()
-//            self.navigationController?.popViewController(animated: true)
-//        }
+        
     }
     
     // action func for unwind segue
@@ -189,7 +218,7 @@ class LocationDetailsViewController: UITableViewController {
     
     // MARK: - Helper Methods
     func toString(from placemark: CLPlacemark) -> String {
-        var address = "make it very long, to test UI effection"
+        var address = ""
         if let tmp = placemark.subThoroughfare {
             address += tmp + " "
         }

@@ -7,6 +7,7 @@
 
 import UIKit
 import CoreLocation
+import CoreData
 
 class CurrentLocationViewController: UIViewController, CLLocationManagerDelegate {
     @IBOutlet var messageLabel: UILabel!
@@ -30,6 +31,8 @@ class CurrentLocationViewController: UIViewController, CLLocationManagerDelegate
     // Fix #2 add a timer for the whole process
     var timer: Timer?
     
+    var managedObjectContext: NSManagedObjectContext!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
@@ -49,6 +52,8 @@ class CurrentLocationViewController: UIViewController, CLLocationManagerDelegate
             let controller = segue.destination as! LocationDetailsViewController
             controller.coordinate = self.location!.coordinate
             controller.placemark = self.placemarker
+            
+            controller.managedObjectContext = managedObjectContext
         }
     }
     
@@ -129,9 +134,11 @@ class CurrentLocationViewController: UIViewController, CLLocationManagerDelegate
                 self.lastGeoCodingError = error
                 // normal
                 if error == nil, let places = placemarks, !places.isEmpty {
+                    print("TAG find a new placemark")
                     self.placemarker = places.last!
                 // some error occured
                 }else {
+                    print("TAG set placemark nil")
                     self.placemarker = nil
                 }
                 
