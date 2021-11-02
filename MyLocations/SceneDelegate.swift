@@ -18,17 +18,23 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
         // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
 //        guard let _ = (scene as? UIWindowScene) else { return }
+        
         let tabController = window!.rootViewController as! UITabBarController
         if let tabViewControllers = tabController.viewControllers {
-            // first tab
+            // first tab - tag
             var navController = tabViewControllers[0] as! UINavigationController
             let controller1 = navController.viewControllers.first as! CurrentLocationViewController
             controller1.managedObjectContext = self.managedObjectContext
             
-            // second tab
+            // second tab - locations
             navController = tabViewControllers[1] as! UINavigationController
             let controller2 = navController.viewControllers.first as! LocationsViewController
             controller2.managedObjectContext = self.managedObjectContext
+            
+            // third tab - map
+            navController = tabViewControllers[2] as! UINavigationController
+            let controller3 = navController.viewControllers.first as! MapViewController
+            controller3.managedObjectContext = self.managedObjectContext
         }
         
         ListenForFatalCoreDataNotifications()

@@ -21,7 +21,7 @@ private let dateFormatter: DateFormatter = {
     return formatter
 }()
 
-class LocationDetailsViewController: UITableViewController {
+class LocationDetailsViewController: UITableViewController, UINavigationControllerDelegate {
 
     @IBOutlet var descriptionTextView: UITextView!
     @IBOutlet var categoryLabel: UILabel!
@@ -50,6 +50,11 @@ class LocationDetailsViewController: UITableViewController {
             }
         }
     }
+    
+    @IBOutlet var addphotoLabel: UILabel!
+    @IBOutlet var imageView: UIImageView!
+    @IBOutlet var imageHeight: NSLayoutConstraint!
+    var image: UIImage?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -108,9 +113,15 @@ class LocationDetailsViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         //print("TAG tableView(_:didSelectRowAt:)...")
         
+        // let the gray color over the cell go away
+        tableView.deselectRow(at: indexPath, animated: true)
+        
         if indexPath.section == 0 && indexPath.row == 0 {
             self.descriptionTextView.becomeFirstResponder()
+        }else if indexPath.section == 1 && indexPath.row == 0 {
+            pickPhoto()
         }
+        
     }
     
     // Acctually, it's a static cell TableViewController, don't need data source
@@ -291,5 +302,87 @@ class LocationDetailsViewController: UITableViewController {
         
         // cancel text view as the first responder
         descriptionTextView.resignFirstResponder()
+    }
+}
+
+extension LocationDetailsViewController: UIImagePickerControllerDelegate {
+    // MARK: - Image Helper Methods
+    func pickPhoto() {
+        // make the condition be true always, only for test this branch
+        if true || UIImagePickerController.isSourceTypeAvailable(.camera) {
+        // check if device have camera
+//        if UIImagePickerController.isSourceTypeAvailable(.camera) {
+            showPhotoMenu()
+        }else {
+            choosePhotoFromLibrary()
+        }
+    }
+    
+    func showPhotoMenu() {
+        let alert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
+        
+        let actCancel = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+        alert.addAction(actCancel)
+        
+        let actTakePhoto = UIAlertAction(title: "Take Photo", style: .default) {_ in
+            self.takePhotoWithCamera()
+        }
+        alert.addAction(actTakePhoto)
+        
+        let actChoosePhoto = UIAlertAction(title: "Choose From Library", style: .default) {_ in
+            self.choosePhotoFromLibrary()
+        }
+        alert.addAction(actChoosePhoto)
+        
+        present(alert, animated: true, completion: nil)
+    }
+    
+    // camera source type cannot run with simulator
+    func takePhotoWithCamera() {
+        let imagePicker = UIImagePickerController()
+        imagePicker.sourceType = .camera
+        imagePicker.delegate = self
+        imagePicker.isEditing = true
+        present(imagePicker, animated: true, completion: nil)
+    }
+    
+    func choosePhotoFromLibrary() {
+        let imagePicker = UIImagePickerController()
+        imagePicker.sourceType = .photoLibrary
+        imagePicker.delegate = self
+        imagePicker.isEditing = true
+        present(imagePicker, animated: true, completion: nil)
+    }
+    
+    // show image
+    func show(image: UIImage) {
+        imageView.image = image
+        imageView.isHidden = false
+        addphotoLabel.text = ""
+
+        // change image height, keep image width=260 points, keep image's height width ratio
+        let imageRatio = image.size.height/image.size.width
+        imageHeight.constant = round(260 * imageRatio)
+//        imageHeight.constant = 260
+        print("TAG imageHeight = \(imageHeight.constant) imageWidth = \(image.size.width)")
+        // after change the image height, reload data to update tableView
+        tableView.reloadData()
+    }
+    
+    // MARK: - UIImagePickerController Delegates
+    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+        // use the edited image
+//        let image = info[UIImagePickerController.InfoKey.editedImage] as? UIImage
+        // use the original image
+        let image = info[UIImagePickerController.InfoKey.originalImage] as? UIImage
+        if let theImage = image {
+            show(image: theImage)
+        }
+        
+        dismiss(animated: true, completion: nil)
+    }
+    
+    func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+        dismiss(animated: true, completion: nil)
     }
 }
