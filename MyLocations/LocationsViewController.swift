@@ -12,7 +12,7 @@ import CoreLocation
 class LocationsViewController: UITableViewController {
     var managedObjectContext: NSManagedObjectContext!
     var locations = [Location]()
-
+    
     lazy var fetchedResultsController: NSFetchedResultsController<Location> = {
     
         let fetchRequest = NSFetchRequest<Location>()
@@ -73,6 +73,12 @@ class LocationsViewController: UITableViewController {
         
         // mass editing button
         navigationItem.rightBarButtonItem = editButtonItem
+    }
+    
+    // handle low memory warning, release some cashed object
+    // in this app, thumbnails used by unvisible cells dealt by UIKit
+    override func didReceiveMemoryWarning() {
+        print("TAG didReceiveMemoryWarning()...")
     }
 
     // MARK: - Helper Methods
@@ -154,12 +160,13 @@ class LocationsViewController: UITableViewController {
         return true
     }
     */
-
+    
     // Override to support editing the table view.
     override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
         if editingStyle == .delete {
             // Delete the row from the data source
             let location = fetchedResultsController.object(at: indexPath)
+            location.removePhotoFile()
             managedObjectContext.delete(location)
             
             do {

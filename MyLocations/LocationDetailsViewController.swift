@@ -56,6 +56,14 @@ class LocationDetailsViewController: UITableViewController, UINavigationControll
     @IBOutlet var imageHeight: NSLayoutConstraint!
     var image: UIImage?
     
+    // object for background mode
+    var observer: Any!
+    
+    deinit {
+        print("TAG LocationDetailsViewController deinit \(self)")
+        NotificationCenter.default.removeObserver(observer!)
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -69,25 +77,35 @@ class LocationDetailsViewController: UITableViewController, UINavigationControll
             title = "Edit Location"
             descriptionTextView.text = descriptionText
             categoryLabel.text = categoryName
+            
+            if location.hasPhoto {
+                // here only read the .jpg file
+                if let theImage = location.photoImage {
+                    show(image: theImage)
+                }
+            }
         }
         else {
             descriptionTextView.text = ""
             categoryLabel.text = ""
         }
 
-            latitudeLabel.text = String(format: "%.8f", coordinate.latitude)
-            longitudeLabel.text = String(format: "%.8f", coordinate.longitude)
-            if let placemark = placemark {
-                addressLabel.text = toString(from: placemark)
-            }else {
-                addressLabel.text = "No Address found"
-            }
-            dateLabel.text = dateToString(from: date)
-            
-            // funcel: Hide keyboard
-            let gestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(hideKeyboard))
-            gestureRecognizer.cancelsTouchesInView = false
-            tableView.addGestureRecognizer(gestureRecognizer)
+        latitudeLabel.text = String(format: "%.8f", coordinate.latitude)
+        longitudeLabel.text = String(format: "%.8f", coordinate.longitude)
+        if let placemark = placemark {
+            addressLabel.text = toString(from: placemark)
+        }else {
+            addressLabel.text = "No Address found"
+        }
+        dateLabel.text = dateToString(from: date)
+        
+        // funcel: Hide keyboard
+        let gestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(hideKeyboard))
+        gestureRecognizer.cancelsTouchesInView = false
+        tableView.addGestureRecognizer(gestureRecognizer)
+        
+        // handle background mode
+        listenForBackgroundNotification()
 
     }
 
@@ -210,6 +228,10 @@ class LocationDetailsViewController: UITableViewController, UINavigationControll
 
             // 1.2. when tag location, create a managed object and put it into managedObjectContext
             location = Location(context: managedObjectContext)
+            
+            // because of the nextPhotoID() mechanism, must set photoID = nil,
+            // otherwise, it will be 0, and every location's photoID will be 0
+            location.photoID = nil
         }
         
         //hudview.show(animation: true)
@@ -223,6 +245,29 @@ class LocationDetailsViewController: UITableViewController, UINavigationControll
         location.category = self.categoryName
         location.placemark = self.placemark
         location.date = self.date
+        
+        // 2.2 save image, put data regard to image into the managed object(location)
+            // 2.2.1 location has no photo before, give it a new photoID
+            // otherwise, overwrite the old .jpg file
+        if let image = image {
+            print("TAG There's image")
+            if !location.hasPhoto {
+                location.photoID = Location.nextPhotoID() as NSNumber
+            }
+            
+                // convert UIImage to .jpg file object
+            if let data = image.jpegData(compressionQuality: 0.5) {
+                do {
+                    // write file
+                    print("TAG write .jpg file to \(location.photoURL.path)")
+                    try data.write(to: location.photoURL, options: .atomic)
+
+                } catch {
+                    print("Error writing file \(error)")
+                }
+            }
+        }
+            
         // 3. save
         do{
             try managedObjectContext.save()
@@ -303,6 +348,27 @@ class LocationDetailsViewController: UITableViewController, UINavigationControll
         // cancel text view as the first responder
         descriptionTextView.resignFirstResponder()
     }
+    
+    // handle background mode
+    func listenForBackgroundNotification() {
+        // change the name of the notification, why? -- doesn't work, there's fatal error
+//        NotificationCenter.default.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: OperationQueue.main) {
+        observer = NotificationCenter.default.addObserver(forName: UIScene.didEnterBackgroundNotification,
+                                               object: nil, queue: OperationQueue.main) {
+            // declare self as weak self, then this closure will not keep view controller alive, means the view controller can be deallocated
+            // from iOS 9.0 and above, system will deal with the memory leak caused by strong reference loop
+            [weak self] _ in
+            // using: <#T##(Notification) -> Void#>
+            if let weakSelf = self {
+                // self.presentationController is the modal view controller that we use present() opened
+                if weakSelf.presentationController != nil {
+                    weakSelf.dismiss(animated: false, completion: nil)
+                }
+                
+                weakSelf.descriptionTextView.resignFirstResponder()
+            }
+        }
+    }
 }
 
 extension LocationDetailsViewController: UIImagePickerControllerDelegate {
@@ -374,7 +440,7 @@ extension LocationDetailsViewController: UIImagePickerControllerDelegate {
         // use the edited image
 //        let image = info[UIImagePickerController.InfoKey.editedImage] as? UIImage
         // use the original image
-        let image = info[UIImagePickerController.InfoKey.originalImage] as? UIImage
+        image = info[UIImagePickerController.InfoKey.originalImage] as? UIImage
         if let theImage = image {
             show(image: theImage)
         }

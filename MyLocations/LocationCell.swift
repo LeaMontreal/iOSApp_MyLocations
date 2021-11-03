@@ -10,7 +10,9 @@ import UIKit
 class LocationCell: UITableViewCell {
     @IBOutlet var descriptionLabel: UILabel!
     @IBOutlet var addressLabel: UILabel!
-
+    
+    @IBOutlet weak var photoImageView: UIImageView!
+    
     override func awakeFromNib() {
         super.awakeFromNib()
         // Initialization code
@@ -46,5 +48,18 @@ class LocationCell: UITableViewCell {
         }
         
         self.addressLabel.text = address
+        
+        // display thumbnail image
+        photoImageView.image = thumbnail(for: location)
+        print("TAG thumbnail size is: \(photoImageView.image!.size.width), \(photoImageView.image!.size.height)")
+    }
+    
+    // get a UIImage for location
+    func thumbnail(for location: Location) -> UIImage {
+        if location.hasPhoto, let theImage = location.photoImage {
+            return theImage.resized(withBounds: CGSize(width: 52, height: 52))
+        }
+        
+        return UIImage()
     }
 }
