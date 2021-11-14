@@ -399,7 +399,8 @@ extension LocationDetailsViewController: UIImagePickerControllerDelegate {
             self.choosePhotoFromLibrary()
         }
         alert.addAction(actChoosePhoto)
-        
+        // in dark mode, change the tintColor, otherwise it's blue
+        alert.view.tintColor = view.tintColor
         present(alert, animated: true, completion: nil)
     }
     
